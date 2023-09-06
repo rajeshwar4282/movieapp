@@ -14,12 +14,14 @@ import com.moviebookingapp.security.services.MovieService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.extern.slf4j.Slf4j;
+
 import org.bson.types.ObjectId;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
@@ -38,6 +40,12 @@ public class MovieController {
 	@Autowired
 	private UserRepository userRepository;
 
+	
+	@Autowired
+    private KafkaTemplate<String, Object> kafkaTemplate;
+
+   
+	
 	@Autowired
 	PasswordEncoder passwordEncoder;
 	@Autowired
@@ -49,6 +57,9 @@ public class MovieController {
 	@Autowired
 	private MovieRepository movieRepository;
 
+	
+	
+	
 	@PutMapping("/{loginId}/forgot")
 	@SecurityRequirement(name = "Bearer Authentication")
 	@Operation(summary = "reset password")
@@ -73,7 +84,9 @@ public class MovieController {
 	@PreAuthorize("hasRole('USER')or hasRole('ADMIN')")
 	public ResponseEntity<List<Movie>> getAllMovies() {
 		
-		movieRepository.deleteByMovieName("interstellar");
+		
+		
+		
 		log.debug("here u can access all the available movies");
 		List<Movie> movieList = movieService.getAllMovies();
 		if (movieList.isEmpty()) {
@@ -176,11 +189,19 @@ public class MovieController {
 	@Operation(summary = "delete a movie(Admin Only)")
 	@PreAuthorize("hasRole('ADMIN')")
 	public ResponseEntity<String> deleteMovie(@PathVariable String movieName) {
+		Movie movie = new Movie();
+		movie.set_id(new ObjectId());
+		movie.setMovieName("inception");
+		movie.setNoOfTicketsAvailable(20);
+		movie.setTheatreName("raj cinemas");
+		movie.setTicketsStatus("BOOK ASAP");
+		movieRepository.insert(movie);
 		List<Movie> availableMovies = movieService.findByMovieName(movieName);
 		if (availableMovies.isEmpty()) {
 			throw new MoviesNotFound("No movies Available with moviename " + movieName);
 		} else {
 			movieService.deleteByMovieName(movieName);
+			kafkaTemplate.send("topicone","Movie Deleted by the Admin. "+movieName+" is now not available");
 			return new ResponseEntity<>("Movie deleted successfully", HttpStatus.OK);
 		}
 
