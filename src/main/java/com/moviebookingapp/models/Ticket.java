@@ -77,8 +77,6 @@ public class Ticket {
 		this.seatNumber = seatNumber;
 	}
 
-	public Ticket() {
-		super();
-	}
+	
     
 }
