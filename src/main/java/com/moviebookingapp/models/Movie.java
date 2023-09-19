@@ -3,7 +3,7 @@ package com.moviebookingapp.models;
 import org.bson.types.ObjectId;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-@Document(collection = "movies")
+@Document(collection = "movie")
 public class Movie {
 	
 	private ObjectId _id;

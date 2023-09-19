@@ -64,6 +64,7 @@ public class MovieController {
 	@SecurityRequirement(name = "Bearer Authentication")
 	@Operation(summary = "reset password")
 	@PreAuthorize("hasAnyRole('USER','ADMIN')")
+	@CrossOrigin
 	public ResponseEntity<String> changePassword(@RequestBody LoginRequest loginRequest, @PathVariable String loginId) {
 		log.debug("forgot password endopoint accessed by " + loginRequest.getLoginId());
 		Optional<User> user1 = userRepository.findByLoginId(loginId);
@@ -82,6 +83,7 @@ public class MovieController {
 	@SecurityRequirement(name = "Bearer Authentication")
 	@Operation(summary = "search all movies")
 	@PreAuthorize("hasRole('USER')or hasRole('ADMIN')")
+	@CrossOrigin
 	public ResponseEntity<List<Movie>> getAllMovies() {
 		
 		
@@ -94,7 +96,7 @@ public class MovieController {
 			throw new MoviesNotFound("No Movies are available");
 		} else {
 			log.debug("listed the available movies");
-			return new ResponseEntity<>(movieList, HttpStatus.FOUND);
+			return new ResponseEntity<>(movieList, HttpStatus.OK);
 		}
 	}
 
@@ -102,9 +104,10 @@ public class MovieController {
 	@SecurityRequirement(name = "Bearer Authentication")
 	@Operation(summary = "search movies by movie name")
 	@PreAuthorize("hasRole('USER')or hasRole('ADMIN')")
+	@CrossOrigin
 	public ResponseEntity<List<Movie>> getMovieByName(@PathVariable String movieName) {
 		log.debug("here search a movie by its name");
-		List<Movie> movieList = movieService.findByMovieName(movieName);
+		List<Movie> movieList = movieRepository.findByMovieNameStartingWith(movieName);
 		if (movieList.isEmpty()) {
 			log.debug("currently no movies are available");
 			throw new MoviesNotFound("Movies Not Found");
@@ -117,6 +120,7 @@ public class MovieController {
 	@SecurityRequirement(name = "Bearer Authentication")
 	@Operation(summary = "book ticket")
 	@PreAuthorize("hasRole('USER')")
+	@CrossOrigin
 	public ResponseEntity<String> bookTickets(@RequestBody Ticket ticket, @PathVariable String movieName) {
 
 		log.debug(ticket.getLoginId() + " entered to book tickets");
@@ -125,6 +129,7 @@ public class MovieController {
 			return new ResponseEntity<>("Movie or Theatre not found",HttpStatus.NOT_FOUND);
 		List<Ticket> allTickets = movieService.findTickets(movieName, ticket.getTheatreName());
 		List<String> seatNumbers = ticket.getSeatNumber();
+		System.out.println(ticket.getSeatNumber());
 		if (seatNumbers.size() != ticket.getNoOfTickets()) {
 			return new ResponseEntity<>("Invalid number of seats", HttpStatus.BAD_REQUEST);
 		}
@@ -142,6 +147,7 @@ public class MovieController {
 
 			log.info("available tickets " + movieService
 					.findMovieByMovieNameAndTheatreName(movieName, ticket.getTheatreName()).getNoOfTicketsAvailable());
+			ticket.set_id(movieService.findMovieByMovieNameAndTheatreName(movieName,ticket.getTheatreName()).get_id());
             movieService.saveTicket(ticket);
 
 			log.debug(ticket.getLoginId() + " booked " + ticket.getNoOfTickets() + " tickets");
@@ -158,13 +164,16 @@ public class MovieController {
 	@SecurityRequirement(name = "Bearer Authentication")
 	@Operation(summary = "get all booked tickets(Admin Only)")
 	@PreAuthorize("hasRole('ADMIN')")
+	@CrossOrigin
 	public ResponseEntity<List<Ticket>> getAllBookedTickets(@PathVariable String movieName) {
+		System.out.println(movieName);
 		return new ResponseEntity<>(movieService.getAllBookedTickets(movieName), HttpStatus.OK);
 	}
 
-	@PutMapping("/{movieName}/update")
+	@GetMapping("/{movieName}/update")
 	@SecurityRequirement(name = "Bearer Authentication")
 	@PreAuthorize("hasRole('ADMIN')")
+	@CrossOrigin
 	public ResponseEntity<String> updateTicketStatus(@PathVariable String movieName) {
 		List<Movie> movie = movieService.findByMovieName(movieName);
 		if (movie == null) {
@@ -188,6 +197,7 @@ public class MovieController {
 	@SecurityRequirement(name = "Bearer Authentication")
 	@Operation(summary = "delete a movie(Admin Only)")
 	@PreAuthorize("hasRole('ADMIN')")
+	@CrossOrigin
 	public ResponseEntity<String> deleteMovie(@PathVariable String movieName) {
 		Movie movie = new Movie();
 		movie.set_id(new ObjectId());
@@ -201,7 +211,6 @@ public class MovieController {
 			throw new MoviesNotFound("No movies Available with moviename " + movieName);
 		} else {
 			movieService.deleteByMovieName(movieName);
-			kafkaTemplate.send("topicone","Movie Deleted by the Admin. "+movieName+" is now not available");
 			return new ResponseEntity<>("Movie deleted successfully", HttpStatus.OK);
 		}
 

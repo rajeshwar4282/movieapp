@@ -29,6 +29,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -39,6 +40,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/v1.0/moviebooking")
 @Slf4j
 public class AuthController {
+	
     @Autowired
     AuthenticationManager authenticationManager;
 
@@ -55,6 +57,7 @@ public class AuthController {
     JwtUtils jwtUtils;
 
     @PostMapping("/login")
+    @CrossOrigin()
     @Operation(summary = "login")
     public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
     	
@@ -79,6 +82,7 @@ public class AuthController {
     }
 
     @PostMapping("/register")
+    @CrossOrigin()
     @Operation(summary = "new registration")
     public ResponseEntity<?> registerUser(@Valid @RequestBody SignupRequest signUpRequest) {
         if (userRepository.existsByLoginId(signUpRequest.getLoginId())) {
